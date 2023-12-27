@@ -13,4 +13,4 @@ router.get("/", fetchAllProducts);
 router.get("/:id", fetchProductById);
 router.patch("/:id", updateProduct);
 
-module.exports = router;
+exports.router = router;

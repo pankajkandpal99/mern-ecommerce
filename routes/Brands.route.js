@@ -7,4 +7,4 @@ const {
 router.get("/", fetchAllBrands);
 router.post("/", createBrand);
 
-module.exports = router;
+exports.router = router;

@@ -16,7 +16,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// iss controller me filteration -> brand filter aur category filter hokar bhi data aayega, aur isi me sorting, pagination ka v logic hai ....
+// Iss controller me filteration -> brand filter aur category filter hokar bhi data aayega, aur isi me sorting, pagination ka v logic hai ....
 exports.fetchAllProducts = async (req, res) => {
   // here we need all query string
   // filter = {"category" : ["smartphone", "laptop"]}        // aane wala data kuchh iss tarah ka hoga..

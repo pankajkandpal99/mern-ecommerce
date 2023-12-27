@@ -7,4 +7,4 @@ const {
 router.get("/", fetchAllCategories);
 router.post("/", createCatgory);
 
-module.exports = router;
+exports.router = router;
