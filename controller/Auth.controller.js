@@ -17,7 +17,7 @@ exports.createUser = async (req, res) => {
       const newUser = new User({ email, password: hashedPass });
       const user = await newUser.save();
       console.log(user);
-      res.status(201).json({ message: "User created successfully" });
+      res.status(201).json({ id: user.id, role: user.role });
     }
   } catch (err) {
     console.log("Error occured while creating new user : ", err.message);
@@ -43,15 +43,12 @@ exports.loginUser = async (req, res) => {
       console.log("wrong email or password.");
       return res.status(401).json({ message: "wrong email or password." });
     }
-    // TODO: We will make addresses independent 
+    // TODO: We will make addresses independent
     // Remove sensitive information (password) before sending the user object to the client..
     const userWithoutPassword = {
       id: user._id,
-      email: user.email,
+      // email: user.email,
       role: user.role,
-      addresses: user.addresses,
-      name: user.name,
-      orders: user.orders,
     };
 
     // console.log(userWithoutPassword);

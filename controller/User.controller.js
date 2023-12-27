@@ -3,7 +3,7 @@ const { User } = require("../model/User.model");
 exports.fetchUserById = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(id);
+    // console.log(id);
 
     const user = await User.findById(id);
     if (!user) {
@@ -19,7 +19,7 @@ exports.fetchUserById = async (req, res) => {
       orders: user.orders,
     };
 
-    console.log(newUser);
+    // console.log(newUser);
     res.status(200).json(newUser);
 
   } catch (err) {

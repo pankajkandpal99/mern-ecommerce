@@ -23,9 +23,9 @@ exports.fetchAllProducts = async (req, res) => {
   // sort = { _sort: "price", _order="desc"}
   // pagination = {_page: 1, _limit=10}
   // TODO : we have to try with multiple category and brands after change in front-end...
-
-  let query = Product.find({}); // The Product.find({}) creates a Query object, but the actual database query is not executed at this point. The modifications to the query object happen immediately, but the database query is only executed when you call exec(). So, the Product.find({}) part will be executed when you call await query.exec()...
-  let totalProductsQuery = Product.find({}); // query is intended for handling pagination, sorting, and filtering, while totalProductsQuery is for calculating the total count.
+  console.log(req.query);
+  let query = Product.find({ deleted: { $ne: true } }); // jinproducts ka deleted key true nahi hai wahi product fetch hokar aayega.
+  let totalProductsQuery = Product.find({ deleted: { $ne: true } });
 
   // for category filteration
   if (req.query.category) {

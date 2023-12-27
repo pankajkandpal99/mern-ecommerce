@@ -17,7 +17,7 @@ exports.fetchCartByUser = async (req, res) => {
   // route me jo query aa ri hai use ye function handle karke sahi response de raha hai.
   try {
     const { user } = req.query;
-    console.log(req.query);
+    // console.log(req.query);
     const cartItems = await Cart.find({ user: user }).populate("product");
     // console.log(cartItems);
     res.status(200).json(cartItems);
@@ -33,10 +33,12 @@ exports.updateCart = async (req, res) => {
     // console.log(req.body);
     const updatedCart = await Cart.findByIdAndUpdate(id, req.body, {
       new: true,
-    }).populate("product");
-    
+    });
     // console.log(updatedCart);
-    res.status(200).json(updatedCart);
+
+    const result = await updatedCart.populate("product");
+    // console.log(result);
+    res.status(200).json(result);
   } catch (err) {
     console.log("Error during update item in Cart: ", err.message);
     return res.status(400).json(err.message);
@@ -47,7 +49,7 @@ exports.deleteFromCart = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedItem = await Cart.findByIdAndDelete(id);
-    console.log(deletedItem);
+    // console.log(deletedItem);
     res.status(200).json(deletedItem);
   } catch (err) {
     console.log("Error during deleting item in Cart: ", err.message);
