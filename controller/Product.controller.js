@@ -19,15 +19,21 @@ exports.createProduct = async (req, res) => {
 // Iss controller me filteration -> brand filter aur category filter hokar bhi data aayega, aur isi me sorting, pagination ka v logic hai ....
 exports.fetchAllProducts = async (req, res) => {
   // here we need all query string
-  // filter = {"category" : ["smartphone", "laptop"]}        // aane wala data kuchh iss tarah ka hoga..
+  // filter = {"category" : ["smartphone", "laptop"]}        
   // sort = { _sort: "price", _order="desc"}
   // pagination = {_page: 1, _limit=10}
   // TODO : we have to try with multiple category and brands after change in front-end...
-  console.log(req.query);
-  let query = Product.find({ deleted: { $ne: true } }); // jinproducts ka deleted key true nahi hai wahi product fetch hokar aayega.
-  let totalProductsQuery = Product.find({ deleted: { $ne: true } });
 
-  // for category filteration
+  console.log(req.query);
+  let condition = {};
+
+  if (!req.query.admin) {
+    condition.deleted = { $ne: true }; // if user is loggedIn then deleted product can send from server to client...
+  }
+  
+  let query = Product.find(condition); 
+  let totalProductsQuery = Product.find(condition);
+
   if (req.query.category) {
     query = query.find({ category: req.query.category });
     totalProductsQuery = totalProductsQuery.find({
@@ -35,7 +41,6 @@ exports.fetchAllProducts = async (req, res) => {
     });
   }
 
-  // for brand filteration
   if (req.query.brand) {
     query = query.find({ brand: req.query.brand });
     totalProductsQuery = totalProductsQuery.find({ brand: req.query.brand });

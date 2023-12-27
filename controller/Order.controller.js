@@ -1,7 +1,7 @@
 const { Order } = require("../model/Order.model");
 
 exports.createOrder = async (req, res) => {
-//   console.log(req.body);
+  //   console.log(req.body);
   const order = new Order(req.body);
   try {
     const doc = await order.save();
@@ -13,14 +13,14 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Ye function ko userAPI me fetchLoggedInUserOrders(userId) function dwara call lagayi ja ri hai jo ki user ke sare orderska tract apne pass rakhta hai, aur MyOrders page per show karta hai....
+// Ye function ko userAPI me fetchLoggedInUserOrders(userId) function dwara call lagayi ja ri hai jo ki user ke sare orders ka track apne pass rakhta hai, aur MyOrders page per show karta hai....
 exports.fetchOrdersByUser = async (req, res) => {
   try {
-    const { user } = req.query;       // isme userId query ke roop me aa ri hai jo ki user ke andar hai.
-    // console.log(user);
+    const { userId } = req.params;
+    console.log(userId);
 
-    const orders = await Order.find({ user: user });
-    // console.log(orders);
+    const orders = await Order.find({ user: userId });
+    console.log(orders);
 
     res.status(200).json(orders);
   } catch (err) {
@@ -52,6 +52,46 @@ exports.updateOrder = async (req, res) => {
     return res.status(200).json(updatedOrder);
   } catch (err) {
     console.log("Error occures while updating order by user: ", err.message);
+    return res.status(400).json(err.message);
+  }
+};
+
+// This handler is only for admin -->
+exports.fetchAllOrders = async (req, res) => {
+  // sort = { _sort: "price", _order="desc"}
+  // pagination = {_page: 1, _limit=10}
+
+  console.log(req.query);
+  
+  let query = Order.find({ deleted: { $ne: true } });
+  let totalOrdersQuery = Order.find({ deleted: { $ne: true } });
+
+  if (req.query._sort && req.query._order) {
+    query = query.sort({ [req.query._sort]: req.query._order });
+    totalOrdersQuery = totalOrdersQuery.sort({
+      [req.query._sort]: req.query._order,
+    });
+  }
+
+  const totalDocs = await totalOrdersQuery.count().exec();
+  console.log(totalDocs);
+
+  if (req.query._page && req.query._limit) {
+    const page = req.query._page;
+    const pageSize = req.query._limit;
+    query = query.skip(pageSize * (page - 1)).limit(pageSize);
+  }
+
+  try {
+    const orders = await query.exec();
+    console.log(orders);
+    res.set("X-Total-Count", totalDocs);
+    res.status(200).json(orders);
+  } catch (err) {
+    console.log(
+      "Error occures while fetching all order by Admin : ",
+      err.message
+    );
     return res.status(400).json(err.message);
   }
 };

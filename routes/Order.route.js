@@ -4,12 +4,14 @@ const {
   fetchOrdersByUser,
   updateOrder,
   deleteOrder,
+  fetchAllOrders,
 } = require("../controller/Order.controller");
 
 // Order is already added in base path
 router.post("/", createOrder);
-router.get("/", fetchOrdersByUser);
-router.get("/:id", updateOrder);
-router.get("/:id", deleteOrder);
+router.get("/user/:userId", fetchOrdersByUser);
+router.patch("/:id", updateOrder);
+router.delete("/:id", deleteOrder);
+router.get('/', fetchAllOrders);    // its only for admin, which have all orders accessing facility..
 
 exports.router = router;
