@@ -1,24 +1,40 @@
 const { User } = require("../model/User.model");
-const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const { sanitizeUser } = require("../services/common");
+const jwt = require("jsonwebtoken");
+const SECRET_KEY = "SECRET_KEY";
 
 // signup
 exports.createUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const existingUser = await User.findOne({ email });
+    const salt = crypto.randomBytes(16);
+    crypto.pbkdf2(
+      req.body.password,
+      salt,
+      310000,
+      32,
+      "sha256",
+      async function (err, hashedPassword) {
+        const user = new User({
+          ...req.body,
+          password: hashedPassword,
+          salt: salt,
+        });
+        const doc = await user.save();
+        // console.log(doc);
 
-    if (existingUser) {
-      console.log("This email has already been taken.");
-      return res.status(404).json({ message: "This email is already in use." });
-    }
-
-    if (!existingUser) {
-      const hashedPass = await bcrypt.hashSync(password, 10);
-      const newUser = new User({ email, password: hashedPass });
-      const user = await newUser.save();
-      console.log(user);
-      res.status(201).json({ id: user.id, role: user.role });
-    }
+        // signup ke baad ek login session create nahi hota hai, iska ye matlab hua ki jab user signup karega to ya to passport usse login karne ko kahega kyuki passport kewal login functionality hi provide karta hain jisse signup ke baad session me data store nahi ho payega, isi functionality ko provide karane ke liye ye 'req.login()' use kiya ja raha hai...jisme req.login ke andar sanitizeUser(doc) me user ka data hai jo session create karega uss doc me kewal id aur role hi session me jakar store hoga kyuki sanitizeUser kewal id aur role hi session ko bhejega.
+        req.login(sanitizeUser(doc), (err) => {
+          // this also calls serializeer...
+          if (err) {
+            res.status(400).json(err.message);
+          } else {
+            const token = jwt.sign(sanitizeUser(doc), SECRET_KEY);
+            res.status(201).json(token); // if not err then save the data in session..
+          }
+        });
+      }
+    ); // crypto.pbkdf2 ek Node.js module crypto ka method hai jo Password-Based Key Derivation Function 2 (PBKDF2) ka istemal karta hai. Iska upayog password se kriptografik key nikalne ke liye hota hai. PBKDF2 ek surakshit tarika hai jo password ke hash ko banane me ek computational cost jodta hai, jisse brute-force attacks ke khilaf adhik suraksha milti hai.
   } catch (err) {
     console.log("Error occured while creating new user : ", err.message);
     res.status(400).json(err.message);
@@ -27,34 +43,12 @@ exports.createUser = async (req, res) => {
 
 // login
 exports.loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await User.findOne({ email }).exec();
-    // This is just temporary, we will use strong password auth..
-    // email check..
-    if (!user) {
-      console.log("wrong email or password.");
-      return res.status(401).json({ message: "wrong email or password." });
-    }
+  console.log("login successfull");
+  res.json(req.user);
+};
 
-    // if email is right and compare user's entered password(password) and stored password(user.password)..
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      console.log("wrong email or password.");
-      return res.status(401).json({ message: "wrong email or password." });
-    }
-    // TODO: We will make addresses independent
-    // Remove sensitive information (password) before sending the user object to the client..
-    const userWithoutPassword = {
-      id: user._id,
-      // email: user.email,
-      role: user.role,
-    };
-
-    // console.log(userWithoutPassword);
-    return res.status(200).json(userWithoutPassword);
-  } catch (err) {
-    console.log("Error occurred during login: ", err.message);
-    res.status(400).json(err.message);
-  }
+// ye function deserilaize karke session me stored user ka data layega... ye function isliye banaya gaya hai ki user session me available hai ya nahi --
+exports.checkUser = async (req, res) => {
+  console.log("checking user..");
+  res.json({ status: "success", user: req.user });
 };
