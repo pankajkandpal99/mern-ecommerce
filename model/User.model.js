@@ -8,7 +8,7 @@ const userSchema = new Schema({
   addresses: { type: [Schema.Types.Mixed] }, // mixed ek data-type hai mongooses ka jisme multiples of data with his type aa sakte hain. ye js object ke liye help karta hai .
   // TODO: We can make a seperate Schema for this...
   name: { type: String },
-  orders: { type: [Schema.Types.Mixed] },
+  // orders: { type: [Schema.Types.Mixed] },
   salt: Buffer,
 });
 

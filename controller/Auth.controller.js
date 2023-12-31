@@ -30,7 +30,13 @@ exports.createUser = async (req, res) => {
             res.status(400).json(err.message);
           } else {
             const token = jwt.sign(sanitizeUser(doc), SECRET_KEY);
-            res.status(201).json(token); // if not err then save the data in session..
+            res
+              .cookie("jwt", token, {
+                expires: new Date(Date.now() + 3600000),
+                httpOnly: true,
+              })
+              .status(201)
+              .json(token);
           }
         });
       }
@@ -44,7 +50,16 @@ exports.createUser = async (req, res) => {
 // login
 exports.loginUser = async (req, res) => {
   console.log("login successfull");
-  res.json(req.user);
+  // console.log(req.user);  // req.user me token rahega.... 
+  res
+    .cookie("jwt", req.user.token, {       // passport se authentication successfully complete ho jane ke baad client se header me cookie set kar di gayi hai jiske andar jwt jayega, aur har request per server use cookieExtractor se extract bhi kar lega...
+      expires: new Date(Date.now() + 3600000),    // 1 day
+      httpOnly: true,
+    })
+    .status(200)
+    .json(req.user.token);
+
+  console.log("cookie sent to client.");
 };
 
 // ye function deserilaize karke session me stored user ka data layega... ye function isliye banaya gaya hai ki user session me available hai ya nahi --

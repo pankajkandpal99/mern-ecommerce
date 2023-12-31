@@ -7,10 +7,11 @@ const session = require("express-session");
 const LocalStrategy = require("passport-local").Strategy;
 const crypto = require("crypto"); // this is the core modules of Node.js (in-built module), and usecase of save the hash password in database using salting...
 const JwtStrategy = require("passport-jwt").Strategy;
-const ExtractJwt = require("passport-jwt").ExtractJwt; // client ki req se aane wale jwt token ko kaise nakalna hai ye hota hai isme...
+// const ExtractJwt = require("passport-jwt").ExtractJwt; // client ki req se aane wale jwt token ko kaise nakalna hai ye hota hai isme...
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 
-const { isAuth, sanitizeUser } = require("./services/common");
+const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const { User } = require("./model/User.model");
 
 const authRouter = require("./routes/Auth.route");
@@ -26,10 +27,12 @@ const SECRET_KEY = "SECRET_KEY";
 
 // JWT options -->
 const opts = {};
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = SECRET_KEY; // TODO: should not be in code...
 
-// session middleware -->
+// middleware -->
+server.use(express.static("build"));
+server.use(cookieParser()); // req.cookies me client se aane wali sari cookies ko cookieParser easily padh sakta hai...isko cookieParser isliye use kiya jata hai kyuki wo server per raw data ke form me aati hain aur cookieParser use convert krke easily padh sakta hai...
 server.use(
   session({
     secret: "This is secret",
@@ -37,10 +40,8 @@ server.use(
     saveUninitialized: false, // don't create session until something stored
   })
 );
-
 // passport authentication -->
 server.use(passport.authenticate("session")); //Ye line of code passport.authenticate("session") passport middleware ko configure karta hai session-based authentication ke liye, jisme deserializeUser function use hota hai session se user details retrieve karne ke liye. ab yeh middleware har request par lagta hai, to session se associated user details deserializeUser function ke through retrieve hote hain, aur fir req.user mein store ho jaate hain. Isme, session ke based pe user ka identity verify hota hai, aur uski details session se li jaati hain
-// middleware -->
 server.use(
   cors({
     exposedHeaders: ["X-Total-Count"],
@@ -57,15 +58,19 @@ server.use("/categories", isAuth(), categoriesRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), ordersRouter.router);
 
-// Passport Local Strategy
+// Passport Local Strategy --> Passport me LocalStrategy ke andar define kiye gaye callback function me typically username, password, aur done teeno req.body ko hi represent karte hain. Yeh parameters authentication process ko control karte hain.
 passport.use(
   "local",
-  new LocalStrategy(async function (username, password, done) {
-    // Passport me LocalStrategy ke andar define kiye gaye callback function me typically username, password, aur done teeno req.body ko hi represent karte hain. Yeh parameters authentication process ko control karte hain.
-    // by-default passport uses username
+  new LocalStrategy({ usernameField: "email" }, async function (
+    // passport by-default username aur password hi valid krta hai wo email per kaam nahi karta hai isliye jab req.body se email aur aayega to wo use username ki tarah recognize karega.
+    email,
+    password,
+    done
+  ) {
     console.log("LocalStrategy called");
     try {
-      const user = await User.findOne({ email: username }).exec();
+      const user = await User.findOne({ email: email }).exec();
+      // console.log(user.id);
       if (!user) {
         done(null, false, { message: "invalid credentials " });
       }
@@ -81,7 +86,8 @@ passport.use(
             done(null, false, { message: "invalid credentials" });
           } else {
             const token = jwt.sign(sanitizeUser(user), SECRET_KEY); // first parameter me payload and sencond me secret key aati hai
-            done(null, token);
+            // console.log('--> ', sanitizeUser(user));
+            done(null, { token });
           }
         }
       );
@@ -99,7 +105,7 @@ passport.use(
     console.log("jwt called");
 
     try {
-      const user = await User.findOne({ id: jwt_payload.sub });
+      const user = await User.findById(jwt_payload.id);
       // console.log(user);
       if (user) {
         return done(null, sanitizeUser(user)); // this calls serializer..
@@ -112,21 +118,18 @@ passport.use(
   })
 );
 
-// user ke successfully login hone ke baad user ka data session me store serializer ke dwara hi kiya jata hai...
+// user ke successfully login hone ke baad user ka data session me store serializer ke dwara hi kiya jata hai...Serialization ka concept tab kaam karta hai jab LocalStrategy se user ka authentication pass ho jata hai..
 passport.serializeUser(function (user, cb) {
-  // Serialization ka concept tab kaam karta hai jab LocalStrategy se user ka authentication pass ho jata hai..
-  process.nextTick(function () {
-    // process.nextTick ek Node.js method hai jo ek callback function ko agle event loop cycle mein daal deta hai. Yani ki, jab aap process.nextTick ka use karte hain, toh aap woh function immediate next event loop mein execute karwa dete hain. Iss context mein, jab serializeUser function mein process.nextTick ka use kiya jata hai, toh yeh ek asynchronous behavior create karta hai. Yeh kaam karta hai jisse aap ek tick ke baad serialize ka kaam karein, aur aapko flexibility milti hai ki aap kaise aur kab serialization karna chahte hain. Overall, process.nextTick ko use karke aap ensure kar sakte hain ki aapka serialization ka kaam ek specific order mein hota hai, especially jab aap dealing karte hain with asynchronous operations.
-    console.log("serialize called --> ", user);
-    return cb(null, sanitizeUser(user)); // user ka authentication successfully hone ke baad localStrategy se user object serilizeUser ko bheja ja ra hai, isme ye ho ra hai ki hame server ke session me user ka kon sa data store karna hai jo hame client ke har request karne per check karna hoga, yaha per wahi store kiya jayega.. jaise ki user ke har request per deSerialization se ye check kiya jayega ki iss user ki aane wali id session me store user ki id (jo ki serializeUser store karega) se compare karke user ko redirect karne ka kaam krta hai.
+  process.nextTick(function () {                       // process.nextTick ek Node.js method hai jo ek callback function ko agle event loop cycle mein daal deta hai. Yani ki, jab aap process.nextTick ka use karte hain, toh aap woh function immediate next event loop mein execute karwa dete hain. Iss context mein, jab serializeUser function mein process.nextTick ka use kiya jata hai, toh yeh ek asynchronous behavior create karta hai. Yeh kaam karta hai jisse aap ek tick ke baad serialize ka kaam karein, aur aapko flexibility milti hai ki aap kaise aur kab serialization karna chahte hain. Overall, process.nextTick ko use karke aap ensure kar sakte hain ki aapka serialization ka kaam ek specific order mein hota hai, especially jab aap dealing karte hain with asynchronous operations.
+    // console.log("serializer called --> ", user);
+    return cb(null, { id: user.id, role: user.role }); // user ka authentication successfully hone ke baad localStrategy se user object serilizeUser ko bheja ja ra hai, isme ye ho ra hai ki hame server ke session me user ka kon sa data store karna hai jo hame client ke har request karne per check karna hoga, yaha per wahi store kiya jayega.. jaise ki user ke har request per deSerialization se ye check kiya jayega ki iss user ki aane wali id session me store user ki id (jo ki serializeUser store karega) se compare karke user ko redirect karne ka kaam krta hai.
   });
 });
 
-// deserilizer ke dwara user ke har req ko check kiya jata hai ki ye sahi user hai ya nahi.. ye session me stored data ko retrieve karta hai...
+// deserilizer ke dwara user ke har req ko check kiya jata hai ki ye sahi user hai ya nahi.. ye session me stored data ko retrieve karta hai...ye session me stored data ko retrieve karega kyuki isme database se data fetch karne ke liye koi v query nahi likhi gyi hai...
 passport.deserializeUser(function (user, cb) {
-  // ye session me stored data ko retrieve karega kyuki isme database se data fetch karne ke liye koi v query nahi likhi gyi hai...
   process.nextTick(function () {
-    console.log("de-serialize called", user);
+    // console.log("de-serializer called -->", user);
     return cb(null, user);
   });
 });

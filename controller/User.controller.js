@@ -2,26 +2,24 @@ const { User } = require("../model/User.model");
 
 exports.fetchUserById = async (req, res) => {
   try {
-    const { id } = req.params;
-    // console.log(id);
+    const { id } = req.user; // ye req.user deserialize ke through yaha per id aa ri hai jo ki session se nikali gayi hai jab user loggedIn hua tha to passport se authentication successfully ho jane ke baad serializer ne user ki id aur role ko session me store kar liya tha jo ki avi deserializer ke through req.user se access ki gayi hai kyuki deserializer session se data retrieve krke req.user me put kar deta hai jo ki backend me kahi v access kiya ja sakta hai..
+    // console.log(req.user);
 
     const user = await User.findById(id);
+    console.log(user);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const newUser = {
+    const userObj = {
       id: user.id,
+      addresses: user.addresses,
       email: user.email,
       role: user.role,
-      addresses: user.addresses,
-      name: user.name,
-      orders: user.orders,
     };
-
-    // console.log(newUser);
-    res.status(200).json(newUser);
-
+    
+    res.status(200).json(userObj);
   } catch (err) {
     console.log("Error during fetching user by id : ", err.message);
     res.status(400).json(err.message);

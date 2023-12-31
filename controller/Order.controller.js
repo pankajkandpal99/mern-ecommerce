@@ -16,10 +16,8 @@ exports.createOrder = async (req, res) => {
 // Ye function ko userAPI me fetchLoggedInUserOrders(userId) function dwara call lagayi ja ri hai jo ki user ke sare orders ka track apne pass rakhta hai, aur MyOrders page per show karta hai....
 exports.fetchOrdersByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    console.log(userId);
-
-    const orders = await Order.find({ user: userId });
+    const { id } = req.user;
+    const orders = await Order.find({ user: id, deleted: { $ne: true } });
     console.log(orders);
 
     res.status(200).json(orders);
@@ -43,6 +41,7 @@ exports.deleteOrder = async (req, res) => {
 
 exports.updateOrder = async (req, res) => {
   const { id } = req.params;
+  console.log(id);
   try {
     const updatedOrder = await Order.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -62,7 +61,7 @@ exports.fetchAllOrders = async (req, res) => {
   // pagination = {_page: 1, _limit=10}
 
   console.log(req.query);
-  
+
   let query = Order.find({ deleted: { $ne: true } });
   let totalOrdersQuery = Order.find({ deleted: { $ne: true } });
 

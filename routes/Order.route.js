@@ -9,7 +9,7 @@ const {
 
 // Order is already added in base path
 router.post("/", createOrder);
-router.get("/user/:userId", fetchOrdersByUser);
+router.get("/own", fetchOrdersByUser);
 router.patch("/:id", updateOrder);
 router.delete("/:id", deleteOrder);
 router.get('/', fetchAllOrders);    // its only for admin, which have all orders accessing facility..
