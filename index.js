@@ -82,12 +82,10 @@ passport.use(
         "sha256", // -------------------------> Hashing algorithm
         async function (err, hashedPassword) {
           if (!crypto.timingSafeEqual(user.password, hashedPassword)) {
-            // compare stored password with req.body.password..
             done(null, false, { message: "invalid credentials" });
           } else {
-            const token = jwt.sign(sanitizeUser(user), SECRET_KEY); // first parameter me payload and sencond me secret key aati hai
-            // console.log('--> ', sanitizeUser(user));
-            done(null, { token });
+            const token = jwt.sign(sanitizeUser(user), SECRET_KEY); // first parameter me payload and second me secret key aati hai
+            done(null, { id: user.id, role: user.role });
           }
         }
       );
@@ -120,7 +118,8 @@ passport.use(
 
 // user ke successfully login hone ke baad user ka data session me store serializer ke dwara hi kiya jata hai...Serialization ka concept tab kaam karta hai jab LocalStrategy se user ka authentication pass ho jata hai..
 passport.serializeUser(function (user, cb) {
-  process.nextTick(function () {                       // process.nextTick ek Node.js method hai jo ek callback function ko agle event loop cycle mein daal deta hai. Yani ki, jab aap process.nextTick ka use karte hain, toh aap woh function immediate next event loop mein execute karwa dete hain. Iss context mein, jab serializeUser function mein process.nextTick ka use kiya jata hai, toh yeh ek asynchronous behavior create karta hai. Yeh kaam karta hai jisse aap ek tick ke baad serialize ka kaam karein, aur aapko flexibility milti hai ki aap kaise aur kab serialization karna chahte hain. Overall, process.nextTick ko use karke aap ensure kar sakte hain ki aapka serialization ka kaam ek specific order mein hota hai, especially jab aap dealing karte hain with asynchronous operations.
+  process.nextTick(function () {
+    // process.nextTick ek Node.js method hai jo ek callback function ko agle event loop cycle mein daal deta hai. Yani ki, jab aap process.nextTick ka use karte hain, toh aap woh function immediate next event loop mein execute karwa dete hain. Iss context mein, jab serializeUser function mein process.nextTick ka use kiya jata hai, toh yeh ek asynchronous behavior create karta hai. Yeh kaam karta hai jisse aap ek tick ke baad serialize ka kaam karein, aur aapko flexibility milti hai ki aap kaise aur kab serialization karna chahte hain. Overall, process.nextTick ko use karke aap ensure kar sakte hain ki aapka serialization ka kaam ek specific order mein hota hai, especially jab aap dealing karte hain with asynchronous operations.
     // console.log("serializer called --> ", user);
     return cb(null, { id: user.id, role: user.role }); // user ka authentication successfully hone ke baad localStrategy se user object serilizeUser ko bheja ja ra hai, isme ye ho ra hai ki hame server ke session me user ka kon sa data store karna hai jo hame client ke har request karne per check karna hoga, yaha per wahi store kiya jayega.. jaise ki user ke har request per deSerialization se ye check kiya jayega ki iss user ki aane wali id session me store user ki id (jo ki serializeUser store karega) se compare karke user ko redirect karne ka kaam krta hai.
   });
