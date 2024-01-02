@@ -21,6 +21,7 @@ const brandsRouter = require("./routes/Brands.route");
 const categoriesRouter = require("./routes/Categories.route");
 const cartRouter = require("./routes/Cart.route");
 const ordersRouter = require("./routes/Order.route");
+const { Server } = require("net");
 
 // Token secret key with jwt -->
 const SECRET_KEY = "SECRET_KEY";
@@ -48,6 +49,7 @@ server.use(
   })
 );
 
+server.use(express.raw({ type: "application/json" })); // here we use it for payment only...
 server.use(express.json()); // to parse req.body
 // routes base paths -->
 server.use("/auth", authRouter.router);
@@ -132,6 +134,66 @@ passport.deserializeUser(function (user, cb) {
     return cb(null, user);
   });
 });
+
+// Payment Intent
+const stripe = require("stripe")(
+  "sk_test_51ODomQSJv0vJsn9fpQ7CQILOsrk29pueDCXSloWVq4mLBiJBPqk8EYslydNN99fuKuQh6eiEH7XeydnOYhhn06zz00wOPSk2X0"
+);
+
+server.post("/create-payment-intent", async (req, res) => {
+  const { totalAmount } = req.body;
+  // console.log(totalAmount);
+
+  // create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: totalAmount * 100, // its for decimal compensation.. ex--> 1400 paise = 14.00 rupee
+    currency: "inr",
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+
+// webhook --> stripe server talk to my Node.js server
+// TODO: we will capture actually order after deploying out server live on public URL
+const endpointSecret =
+  "whsec_0b7c8fa6b45112984009bb11f08689d4bb89da29249fa261da76d18989502f32";
+
+server.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  (request, response) => {
+    const sig = request.headers["stripe-signature"];
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntentSucceeded = event.data.object;
+        console.log({ paymentIntentSucceeded });
+        // Then define and call a function to handle the event payment_intent.succeeded
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+    
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
+  }
+);
 
 main()
   .then(() => {
