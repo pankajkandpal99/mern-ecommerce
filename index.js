@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const server = express();
@@ -10,6 +11,7 @@ const JwtStrategy = require("passport-jwt").Strategy;
 // const ExtractJwt = require("passport-jwt").ExtractJwt; // client ki req se aane wale jwt token ko kaise nakalna hai ye hota hai isme...
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const path = require("path");
 
 const { isAuth, sanitizeUser, cookieExtractor } = require("./services/common");
 const { User } = require("./model/User.model");
@@ -21,22 +23,53 @@ const brandsRouter = require("./routes/Brands.route");
 const categoriesRouter = require("./routes/Categories.route");
 const cartRouter = require("./routes/Cart.route");
 const ordersRouter = require("./routes/Order.route");
-const { Server } = require("net");
 
-// Token secret key with jwt -->
-const SECRET_KEY = "SECRET_KEY";
+// webhook --> stripe server talk to my Node.js server
+// TODO: we will capture actually order after deploying out server live on public URL
+const endpointSecret = process.env.ENDPOINT_SECRET;
+server.post(
+  "/webhook",
+  express.raw({ type: "application/json" }), // otherr apis ko json-parser chiye aur ise raw-parser chiye..
+  (request, response) => {
+    const sig = request.headers["stripe-signature"];
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    } catch (err) {
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntentSucceeded = event.data.object;
+        console.log({ paymentIntentSucceeded });
+        // Then define and call a function to handle the event payment_intent.succeeded
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    response.send();
+  }
+);
 
 // JWT options -->
 const opts = {};
 opts.jwtFromRequest = cookieExtractor;
-opts.secretOrKey = SECRET_KEY; // TODO: should not be in code...
+opts.secretOrKey = process.env.JWT_SECRET_KEY;
 
 // middleware -->
-server.use(express.static("build"));
+server.use(express.static(path.resolve(__dirname, "build"))); 
 server.use(cookieParser()); // req.cookies me client se aane wali sari cookies ko cookieParser easily padh sakta hai...isko cookieParser isliye use kiya jata hai kyuki wo server per raw data ke form me aati hain aur cookieParser use convert krke easily padh sakta hai...
 server.use(
   session({
-    secret: "This is secret",
+    secret: process.env.SESSION_KEY,
     resave: false, // don't save session if modified..
     saveUninitialized: false, // don't create session until something stored
   })
@@ -49,7 +82,6 @@ server.use(
   })
 );
 
-server.use(express.raw({ type: "application/json" })); // here we use it for payment only...
 server.use(express.json()); // to parse req.body
 // routes base paths -->
 server.use("/auth", authRouter.router);
@@ -86,8 +118,11 @@ passport.use(
           if (!crypto.timingSafeEqual(user.password, hashedPassword)) {
             done(null, false, { message: "invalid credentials" });
           } else {
-            const token = jwt.sign(sanitizeUser(user), SECRET_KEY); // first parameter me payload and second me secret key aati hai
-            done(null, { id: user.id, role: user.role });
+            const token = jwt.sign(
+              sanitizeUser(user),
+              process.env.JWT_SECRET_KEY
+            ); // first parameter me payload and second me secret key aati hai
+            done(null, { id: user.id, role: user.role, token });
           }
         }
       );
@@ -136,10 +171,7 @@ passport.deserializeUser(function (user, cb) {
 });
 
 // Payment Intent
-const stripe = require("stripe")(
-  "sk_test_51ODomQSJv0vJsn9fpQ7CQILOsrk29pueDCXSloWVq4mLBiJBPqk8EYslydNN99fuKuQh6eiEH7XeydnOYhhn06zz00wOPSk2X0"
-);
-
+const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 server.post("/create-payment-intent", async (req, res) => {
   const { totalAmount } = req.body;
   // console.log(totalAmount);
@@ -158,43 +190,6 @@ server.post("/create-payment-intent", async (req, res) => {
   });
 });
 
-// webhook --> stripe server talk to my Node.js server
-// TODO: we will capture actually order after deploying out server live on public URL
-const endpointSecret =
-  "whsec_0b7c8fa6b45112984009bb11f08689d4bb89da29249fa261da76d18989502f32";
-
-server.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  (request, response) => {
-    const sig = request.headers["stripe-signature"];
-
-    let event;
-
-    try {
-      event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
-    } catch (err) {
-      response.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-
-    // Handle the event
-    switch (event.type) {
-      case "payment_intent.succeeded":
-        const paymentIntentSucceeded = event.data.object;
-        console.log({ paymentIntentSucceeded });
-        // Then define and call a function to handle the event payment_intent.succeeded
-        break;
-      // ... handle other event types
-      default:
-        console.log(`Unhandled event type ${event.type}`);
-    }
-    
-    // Return a 200 response to acknowledge receipt of the event
-    response.send();
-  }
-);
-
 main()
   .then(() => {
     console.log("successfully connected to mongoDB.");
@@ -204,9 +199,10 @@ main()
   });
 
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/ecommerce");
+  await mongoose.connect(process.env.MONGODB_URL);
 }
 
-server.listen(8080, () => {
-  console.log("Server is on and listening on PORT 8080.");
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is on and listening on PORT ${PORT}.`);
 });

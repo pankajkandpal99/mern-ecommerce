@@ -2,7 +2,8 @@ const { Cart } = require("../model/Cart.model");
 
 exports.addToCart = async (req, res) => {
   const { id } = req.user;
-  const cart = new Cart({ ...req.body, user: id });   // isme upper req.user se user ki ID retrieve kar rahe hain, aur fir usi ID ko use karke Cart model ke instance mein user field ko set kar rahe hain. 
+  console.log(req.body);
+  const cart = new Cart({ ...req.body, user: id }); // isme upper req.user se user ki ID retrieve kar rahe hain, aur fir usi ID ko use karke Cart model ke instance mein user field ko set kar rahe hain.
   try {
     const doc = await cart.save(); // isme naya cart document MongoDB database mein save kiya ja raha hai.
     const result = await doc.populate("product"); // Agar save karna successful hota hai, to populate method se product field populate kiya ja raha hai, jo ki shayad product field ek reference hai aur aap uske actual details ko populate karna chahte hain.
