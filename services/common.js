@@ -17,7 +17,7 @@ exports.cookieExtractor = function (req) {
     token = req.cookies["jwt"];
   }
   // TODO: this is temporary token for testing without cookie --> jab cookieExtractor ko jwt call karega (kyuki cookie ke andar hi browser per token store hota hai) to jwt ko ek bana banaya same token hi cookie extrator se return go jayega, ye cheating hai but baad me hum ise fix kar denge..
-  // token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1OGYxZTQ2MGFjNjU4MjAzOWM5MjJkMSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTcwNDI2OTU5MH0.2SqAaRsKvZjPmlWawQ0-wFMNDEioAiS9ZyC8okkspIA'
+  // token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1OGYxMjU3NTA4YjZhOGFjMDMwMTkwNCIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzA0MjczOTIzfQ.F32xpPVftuqd7wZO7WEu45NqxCRF-T8T7PRtbo3u9fk'
   // console.log(req.cookies);
   return token;
 };
