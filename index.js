@@ -26,6 +26,7 @@ const ordersRouter = require("./routes/Order.route");
 
 // webhook --> stripe server talk to my Node.js server
 // TODO: we will capture actually order after deploying out server live on public URL
+
 const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
@@ -65,7 +66,7 @@ opts.jwtFromRequest = cookieExtractor;
 opts.secretOrKey = process.env.JWT_SECRET_KEY;
 
 // middleware -->
-server.use(express.static(path.resolve(__dirname, "build"))); 
+server.use(express.static(path.resolve(__dirname, "build")));
 server.use(cookieParser()); // req.cookies me client se aane wali sari cookies ko cookieParser easily padh sakta hai...isko cookieParser isliye use kiya jata hai kyuki wo server per raw data ke form me aati hain aur cookieParser use convert krke easily padh sakta hai...
 server.use(
   session({
@@ -92,11 +93,10 @@ server.use("/categories", isAuth(), categoriesRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), ordersRouter.router);
 
-// Passport Local Strategy --> Passport me LocalStrategy ke andar define kiye gaye callback function me typically username, password, aur done teeno req.body ko hi represent karte hain. Yeh parameters authentication process ko control karte hain.
+// Passport Local Strategy 
 passport.use(
   "local",
   new LocalStrategy({ usernameField: "email" }, async function (
-    // passport by-default username aur password hi valid krta hai wo email per kaam nahi karta hai isliye jab req.body se email aur aayega to wo use username ki tarah recognize karega.
     email,
     password,
     done
@@ -121,7 +121,8 @@ passport.use(
             const token = jwt.sign(
               sanitizeUser(user),
               process.env.JWT_SECRET_KEY
-            ); // first parameter me payload and second me secret key aati hai
+            ); 
+            console.log(token);
             done(null, { id: user.id, role: user.role, token });
           }
         }
@@ -202,7 +203,7 @@ async function main() {
   await mongoose.connect(process.env.MONGODB_URL);
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 server.listen(PORT, () => {
   console.log(`Server is on and listening on PORT ${PORT}.`);
 });

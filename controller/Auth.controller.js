@@ -28,7 +28,10 @@ exports.createUser = async (req, res) => {
           if (err) {
             res.status(400).json(err.message);
           } else {
-            const token = jwt.sign(sanitizeUser(doc), process.env.JWT_SECRET_KEY);
+            const token = jwt.sign(
+              sanitizeUser(doc),
+              process.env.JWT_SECRET_KEY
+            );
             res
               .cookie("jwt", token, {
                 expires: new Date(Date.now() + 3600000),
@@ -51,7 +54,8 @@ exports.loginUser = async (req, res) => {
   const user = req.user;
   console.log("login successfull");
   res
-    .cookie("jwt", user.token, {          // passport se authentication successfully complete ho jane ke baad client se header me cookie set kar di gayi hai jiske andar jwt jayega, aur har request per server use cookieExtractor se extract bhi kar lega...
+    .cookie("jwt", user.token, {
+      // passport se authentication successfully complete ho jane ke baad client se header me cookie set kar di gayi hai jiske andar jwt jayega, aur har request per server use cookieExtractor se extract bhi kar lega...
       expires: new Date(Date.now() + 3600000), // 1 day
       httpOnly: true,
     })
@@ -67,8 +71,10 @@ exports.checkAuth = async (req, res) => {
   console.log("checking user..");
 
   if (req.user) {
+    console.log("req.user -> ", req.user);
     res.json(req.user);
   } else {
+    console.log("req.user is not available..");
     res.sendStatus(401);
   }
 };
