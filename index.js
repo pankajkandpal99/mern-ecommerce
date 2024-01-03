@@ -92,8 +92,12 @@ server.use("/brands", isAuth(), brandsRouter.router);
 server.use("/categories", isAuth(), categoriesRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), ordersRouter.router);
+// this line we add to make react router work in case of other routes doesn't match -> // agar path match nahi hota hai to aap res.sendFile se index.html me chale jao...
+server.get("*", (req, res) =>
+  res.sendFile(path.resolve("build", "index.html"))
+);
 
-// Passport Local Strategy 
+// Passport Local Strategy
 passport.use(
   "local",
   new LocalStrategy({ usernameField: "email" }, async function (
@@ -121,7 +125,7 @@ passport.use(
             const token = jwt.sign(
               sanitizeUser(user),
               process.env.JWT_SECRET_KEY
-            ); 
+            );
             console.log(token);
             done(null, { id: user.id, role: user.role, token });
           }
@@ -174,7 +178,7 @@ passport.deserializeUser(function (user, cb) {
 // Payment Intent
 const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 server.post("/create-payment-intent", async (req, res) => {
-  const { totalAmount } = req.body;
+  const { totalAmount, orderId } = req.body;
   // console.log(totalAmount);
 
   // create a PaymentIntent with the order amount and currency
@@ -183,6 +187,9 @@ server.post("/create-payment-intent", async (req, res) => {
     currency: "inr",
     automatic_payment_methods: {
       enabled: true,
+    },
+    metadata: {
+      orderId,
     },
   });
 
