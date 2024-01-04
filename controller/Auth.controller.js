@@ -65,7 +65,6 @@ exports.loginUser = async (req, res) => {
   console.log("cookie sent to client.");
 };
 
-// ye function deserilaize karke session me stored user ka data layega... ye function isliye banaya gaya hai ki user session me available hai ya nahi --
 // ye function server based function hai jo frontend se call karne per pata lagata hai ki ye request authenticated hai ya nahi ...
 exports.checkAuth = async (req, res) => {
   console.log("checking user..");
