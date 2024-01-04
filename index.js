@@ -23,6 +23,7 @@ const brandsRouter = require("./routes/Brands.route");
 const categoriesRouter = require("./routes/Categories.route");
 const cartRouter = require("./routes/Cart.route");
 const ordersRouter = require("./routes/Order.route");
+const { Order } = require("./model/Order.model");
 
 // webhook --> stripe server talk to my Node.js express server
 // TODO: we will capture actually order after deploying out server live on public URL
@@ -31,7 +32,7 @@ const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
   express.raw({ type: "application/json" }), // otherr apis ko json-parser chiye aur ise raw-parser chiye..
-  (request, response) => {
+  async (request, response) => {
     const sig = request.headers["stripe-signature"];
 
     let event;
@@ -43,12 +44,18 @@ server.post(
       return;
     }
 
-    // Handle the event
+    // Handle the event --> payment successfull/unhandled in stripe server...
     switch (event.type) {
       case "payment_intent.succeeded":
         const paymentIntentSucceeded = event.data.object;
-        console.log({ paymentIntentSucceeded });
-        // Then define and call a function to handle the event payment_intent.succeeded
+        console.log(paymentIntentSucceeded);
+
+        const order = await Order.findById(
+          paymentIntentSucceeded.metadata.orderId
+        ); // watch the stripe server payment succeded logs if the payment successfully completed..
+        order.paymentStatus = 'received';
+        await order.save();
+        
         break;
       // ... handle other event types
       default:
@@ -153,10 +160,10 @@ passport.use(
       if (user) {
         return done(null, sanitizeUser(user)); // this calls serializer..
       } else {
-        return done(null, false); 
+        return done(null, false);
       }
     } catch (err) {
-      return done(err, false); 
+      return done(err, false);
     }
   })
 );
