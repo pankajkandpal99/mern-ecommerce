@@ -25,9 +25,9 @@ const cartRouter = require("./routes/Cart.route");
 const ordersRouter = require("./routes/Order.route");
 const { Order } = require("./model/Order.model");
 
+
 // webhook --> stripe server talk to my Node.js express server
 // TODO: we will capture actually order after deploying out server live on public URL
-
 const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
@@ -53,9 +53,9 @@ server.post(
         const order = await Order.findById(
           paymentIntentSucceeded.metadata.orderId
         ); // watch the stripe server payment succeded logs if the payment successfully completed..
-        order.paymentStatus = 'received';
+        order.paymentStatus = "received";
         await order.save();
-        
+
         break;
       // ... handle other event types
       default:
@@ -100,6 +100,8 @@ server.use("/brands", isAuth(), brandsRouter.router);
 server.use("/categories", isAuth(), categoriesRouter.router);
 server.use("/cart", isAuth(), cartRouter.router);
 server.use("/orders", isAuth(), ordersRouter.router);
+
+
 // this line we add to make react router work in case of other routes doesn't match
 server.get("*", (req, res) =>
   res.sendFile(path.resolve("build", "index.html"))

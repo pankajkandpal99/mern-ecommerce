@@ -1,7 +1,8 @@
 const { User } = require("../model/User.model");
 const crypto = require("crypto");
-const { sanitizeUser } = require("../services/common");
+const { sanitizeUser, sendMail } = require("../services/common");
 const jwt = require("jsonwebtoken");
+const { use } = require("passport");
 
 // signup
 exports.createUser = async (req, res) => {
@@ -75,5 +76,69 @@ exports.checkAuth = async (req, res) => {
   } else {
     console.log("req.user is not available..");
     res.sendStatus(401);
+  }
+};
+
+exports.resetPasswordRequest = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email: email }); // req.body ka mail pehle check kiya jayega ki ye mail available hai ya nahi database me ....
+  if (user) {
+    const token = crypto.randomBytes(48).toString("hex"); // ye token user ko email ke saath jayega jo ki uski identification v hogi ki ye token jab password reset ke saath dobara server tak aayega fir ye check karega ki ye token jiss user ko email ke through gaya tha ky ye wahi token hai ya fir koi dusra token hai.. ye token ek random string hai jo ki kaafi secure hai...
+    user.resetPasswordToken = token;
+    await user.save();
+
+    // Also set token in email
+    const resetPageLink = `http://localhost:3000/reset-password?token=${token}&email=${email}`;
+    const subject = "reset password for e-commerce";
+    const html = `<p>Click <a href='${resetPageLink}'> here </a> to reset your password.</p>`;
+
+    // send mail and a token in the mail body so we can verify thet user has clicked right link
+
+    if (email) {
+      console.log(email);
+      const response = await sendMail({ to: email, subject, html });
+
+      res.json(response);
+    } else {
+      res.sendStatus(400);
+    }
+  } else {
+    res.sendStatus(400);
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, token, password } = req.body;
+  // console.log(email, password, token);
+
+  const user = await User.findOne({ email, resetPasswordToken: token }); // database me available email aur resetPasswordToken agar req.body se aaye data se match kiye to hi server req ko aage jane dega nahi to error throw kar dega...
+  if (user) {
+    // then saved new password in database and remove previous..
+    const salt = crypto.randomBytes(16);
+    crypto.pbkdf2(
+      password,
+      salt,
+      310000,
+      32,
+      "sha256",
+      async function (err, hashedPassword) {
+        user.password = hashedPassword;
+        user.salt = salt;
+        await user.save();
+
+        // sent email to successfully reset password.
+        const subject = "password successfully reset for e-commerce";
+        const html = `<p>Successfully able to Reset Password</p>`;
+
+        if (email) {
+          const response = await sendMail({ to: email, subject, html });
+          res.json(response);
+        } else {
+          res.sendStatus(400);
+        }
+      }
+    );
+  } else {
+    res.sendStatus(400);
   }
 };
