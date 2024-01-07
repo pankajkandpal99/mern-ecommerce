@@ -1,11 +1,15 @@
 const { Order } = require("../model/Order.model");
+const { User } = require("../model/User.model");
+const { sendMail, invoiceTemplate } = require("../services/common");
 
 exports.createOrder = async (req, res) => {
   //   console.log(req.body);
   const order = new Order(req.body);
   try {
     const doc = await order.save();
-    // console.log(doc);
+    const user = await User.findById(order.user);
+    sendMail({ to: user.email, html: invoiceTemplate(order), subject: 'Order Received' });
+
     return res.status(201).json(doc);
   } catch (err) {
     console.log("Error occures while creating order: ", err.message);

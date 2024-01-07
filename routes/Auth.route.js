@@ -2,6 +2,7 @@ const passport = require("passport");
 const {
   createUser,
   loginUser,
+  logoutUser,
   checkAuth,
   resetPasswordRequest,
   resetPassword
@@ -9,8 +10,9 @@ const {
 const router = require("express").Router();
 
 router.post("/signup", createUser);
-router.post("/login", passport.authenticate("local"), loginUser); // login function jo ki Auth.controller me available hai usper jane se pehle 'passport.authenticate('local')' se successfully authentication hoga fir jakar login function per jayega..
+router.post("/login", passport.authenticate("local"), loginUser); 
 router.get("/check", passport.authenticate("jwt"), checkAuth);
+router.get("/logout", logoutUser); 
 router.post("/reset-password-request", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 

@@ -142,3 +142,15 @@ exports.resetPassword = async (req, res) => {
     res.sendStatus(400);
   }
 };
+
+// logout controller
+exports.logoutUser = async (req, res) => {
+  res
+    .cookie("jwt", null, {
+      expires: new Date(Date.now()), // cookie user ko null bhejkar usi time expire bhi ho jayegi.
+      httpOnly: true,
+    })
+    .sendStatus(200);
+
+  console.log("logout successfull");
+};
