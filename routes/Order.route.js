@@ -7,7 +7,6 @@ const {
   fetchAllOrders,
 } = require("../controller/Order.controller");
 
-// Order is already added in base path
 router.post("/", createOrder);
 router.get("/own", fetchOrdersByUser);
 router.patch("/:id", updateOrder);

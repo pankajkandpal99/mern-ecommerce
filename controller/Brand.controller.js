@@ -1,6 +1,5 @@
 const { Brand } = require("../model/Brand.model");
 
-// isme sare brands fetch karke client-side per show kiye jayenge.exports..
 exports.fetchAllBrands = async (req, res) => {
   try {
     const brands = await Brand.find({}).exec();

@@ -27,7 +27,6 @@ const { Order } = require("./model/Order.model");
 
 
 // webhook --> stripe server talk to my Node.js express server
-// TODO: we will capture actually order after deploying out server live on public URL
 const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
   "/webhook",
@@ -78,7 +77,7 @@ server.use(cookieParser());
 server.use(
   session({
     secret: process.env.SESSION_KEY,
-    resave: false, // don't save session if modified..
+    resave: false,            // don't save session if modified..
     saveUninitialized: false, // don't create session until something stored
   })
 );
@@ -117,7 +116,6 @@ passport.use(
   ) {
     // by default passport uses username
     console.log("LocalStrategy called");
-    console.log({ email, password });
     try {
       const user = await User.findOne({ email: email });
       console.log(user);
@@ -155,7 +153,7 @@ passport.use(
   "jwt",
   new JwtStrategy(opts, async function (jwt_payload, done) {
     console.log("jwt called");
-    console.log({ jwt_payload });
+    // console.log({ jwt_payload });
     try {
       const user = await User.findById(jwt_payload.id);
       // console.log(user);
@@ -190,7 +188,7 @@ passport.deserializeUser(function (user, cb) {
 const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 server.post("/create-payment-intent", async (req, res) => {
   const { totalAmount, orderId } = req.body;
-  console.log(totalAmount);
+  // console.log(totalAmount);
 
   // create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({

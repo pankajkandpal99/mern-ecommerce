@@ -2,11 +2,11 @@ const { Cart } = require("../model/Cart.model");
 
 exports.addToCart = async (req, res) => {
   const { id } = req.user;
-  console.log(req.body);
-  const cart = new Cart({ ...req.body, user: id }); // isme upper req.user se user ki ID retrieve kar rahe hain, aur fir usi ID ko use karke Cart model ke instance mein user field ko set kar rahe hain.
+  // console.log(req.body);
+  const cart = new Cart({ ...req.body, user: id }); 
   try {
-    const doc = await cart.save(); // isme naya cart document MongoDB database mein save kiya ja raha hai.
-    const result = await doc.populate("product"); // Agar save karna successful hota hai, to populate method se product field populate kiya ja raha hai, jo ki shayad product field ek reference hai aur aap uske actual details ko populate karna chahte hain.
+    const doc = await cart.save(); 
+    const result = await doc.populate("product"); 
     res.status(201).json(result);
   } catch (err) {
     console.log("Error during adding Cart in database: ", err.message);
@@ -14,7 +14,6 @@ exports.addToCart = async (req, res) => {
   }
 };
 
-// Ye function tab call hota hai jab user login karta hai to ye function usi time call hokar client ko response bhejta hai aur user ke cart me items ko show kar deta hai jo usne order kiye the.
 exports.fetchCartByUser = async (req, res) => {
   try {
     const { id } = req.user;

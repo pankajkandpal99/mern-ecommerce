@@ -1,13 +1,15 @@
-// controller me crud operations hote hain....
 const { Product } = require("../model/Product.model");
 
 exports.createProduct = async (req, res) => {
-  // this product we have to get from API body...
   const product = new Product(req.body);
+  product.discountPrice = Math.round(
+    product.price * (1 - product.discountPercentage / 100)
+  );
+
   try {
     const response = await product.save();
     if (response) {
-      //   console.log(response);
+      // console.log(response);
       res.json(response);
     }
   } catch (err) {
@@ -16,42 +18,40 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-// Iss controller me filteration -> brand filter aur category filter hokar bhi data aayega, aur isi me sorting, pagination ka v logic hai ....
 exports.fetchAllProducts = async (req, res) => {
   // here we need all query string
-  // filter = {"category" : ["smartphone", "laptop"]}        
+  // filter = {"category" : ["smartphone", "laptop"]}
   // sort = { _sort: "price", _order="desc"}
   // pagination = {_page: 1, _limit=10}
-  // TODO : we have to try with multiple category and brands after change in front-end...
 
-  console.log(req.query);
   let condition = {};
 
   if (!req.query.admin) {
-    condition.deleted = { $ne: true }; // if user is loggedIn then deleted product can send from server to client...
+    condition.deleted = { $ne: true };
   }
-  
-  let query = Product.find(condition); 
+
+  let query = Product.find(condition);
   let totalProductsQuery = Product.find(condition);
 
   if (req.query.category) {
-    query = query.find({ category: req.query.category });
+    query = query.find({ category: { $in: req.query.category.split(",") } });
     totalProductsQuery = totalProductsQuery.find({
-      category: req.query.category,
+      category: { $in: req.query.category.split(",") },
     });
   }
 
   if (req.query.brand) {
-    query = query.find({ brand: req.query.brand });
-    totalProductsQuery = totalProductsQuery.find({ brand: req.query.brand });
+    query = query.find({ brand: { $in: req.query.brand.split(",") } });
+    totalProductsQuery = totalProductsQuery.find({
+      brand: { $in: req.query.brand.split(",") },
+    });
   }
 
-  // for sorting --> TODO: How to get sorting on discounted price not on actual price...
   if (req.query._sort && req.query._order) {
-    query = query.sort({ [req.query._sort]: req.query._order }); // { [req.query._sort]: req.query._order } --> mein [req.query._sort] ek dynamic key banane ka tarika hai. Yeh kuch is tarah ka code hota hai ki, agar req.query._sort ki value, maan lo "name" hai, toh yeh wala expression effectively { name: req.query._order } ban jaayega.
+    query = query.sort({ [req.query._sort]: req.query._order });  // The square brackets notation ({ [req.query._sort]: req.query._order }) is used when the property name is dynamic or determined at runtime. It allows you to use the value of req.query._sort as the property name in the resulting object.
   }
 
-  const totalDocs = await totalProductsQuery.count().exec(); // The totalDocs value is used for pagination. It helps in providing information to the client about the total number of documents available based on the applied filters. This is commonly used in pagination scenarios where the client may need to display the total number of pages or items available. When handling pagination, the totalDocs value is set in the response header X-Total-Count. The client can use this information to calculate the total number of pages and make decisions on how to display the pagination controls. ye kewal brand aur category me hi find kar raha hai kyuki wahi se count ki value upper neeche ho sakta hai.
+  const totalDocs = await totalProductsQuery.count().exec(); // The totalDocs value is used for pagination. It helps in providing information to the client about the total number of documents available based on the applied filters.
   // console.log({ totalDocs });
 
   if (req.query._page && req.query._limit) {
@@ -84,10 +84,17 @@ exports.fetchProductById = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
+    const product = await Product.findByIdAndUpdate(id, req.body, {
       new: true,
-    }); // new: true se hame front-end per latest product milega updated.
+    });
+
+    product.discountPrice = Math.round(
+      product.price * (1 - product.discountPercentage / 100)
+    );
+
+    const updatedProduct = await product.save();
     res.status(200).json(updatedProduct);
   } catch (err) {
     console.log("Error creating while updating the product : ", err.message);

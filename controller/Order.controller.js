@@ -1,14 +1,27 @@
 const { Order } = require("../model/Order.model");
+const { Product } = require("../model/Product.model");
 const { User } = require("../model/User.model");
 const { sendMail, invoiceTemplate } = require("../services/common");
 
 exports.createOrder = async (req, res) => {
-  //   console.log(req.body);
   const order = new Order(req.body);
+  // console.log(order);
+
+  // here we have to update stocks
+  for (let item of order.items) {     // because order.items is an array.
+    await Product.findByIdAndUpdate(item.product.id, {
+      $inc: { stock: -1 * item.quantity }, // stock decrement by negative increment
+    });
+  }
+
   try {
     const doc = await order.save();
     const user = await User.findById(order.user);
-    sendMail({ to: user.email, html: invoiceTemplate(order), subject: 'Order Received' });
+    sendMail({
+      to: user.email,
+      html: invoiceTemplate(order),
+      subject: "Order Received",
+    });
 
     return res.status(201).json(doc);
   } catch (err) {
@@ -17,7 +30,6 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Ye function ko userAPI me fetchLoggedInUserOrders(userId) function dwara call lagayi ja ri hai jo ki user ke sare orders ka track apne pass rakhta hai, aur MyOrders page per show karta hai....
 exports.fetchOrdersByUser = async (req, res) => {
   try {
     const { id } = req.user;
@@ -87,7 +99,7 @@ exports.fetchAllOrders = async (req, res) => {
 
   try {
     const orders = await query.exec();
-    console.log(orders);
+    // console.log(orders);
     res.set("X-Total-Count", totalDocs);
     res.status(200).json(orders);
   } catch (err) {

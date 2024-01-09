@@ -66,7 +66,6 @@ exports.loginUser = async (req, res) => {
   console.log("cookie sent to client.");
 };
 
-// ye function server based function hai jo frontend se call karne per pata lagata hai ki ye request authenticated hai ya nahi ...
 exports.checkAuth = async (req, res) => {
   console.log("checking user..");
 
@@ -147,7 +146,7 @@ exports.resetPassword = async (req, res) => {
 exports.logoutUser = async (req, res) => {
   res
     .cookie("jwt", null, {
-      expires: new Date(Date.now()), // cookie user ko null bhejkar usi time expire bhi ho jayegi.
+      expires: new Date(Date.now()), // cookie user ko null karke usi time expire bhi ho jayegi.
       httpOnly: true,
     })
     .sendStatus(200);
