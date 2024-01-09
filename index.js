@@ -118,7 +118,6 @@ passport.use(
     console.log("LocalStrategy called");
     try {
       const user = await User.findOne({ email: email });
-      console.log(user);
       if (!user) {
         done(null, false, { message: "invalid credentials " }); // for safety
       }
@@ -152,8 +151,7 @@ passport.use(
 passport.use(
   "jwt",
   new JwtStrategy(opts, async function (jwt_payload, done) {
-    console.log("jwt called");
-    // console.log({ jwt_payload });
+    // console.log("jwt called");
     try {
       const user = await User.findById(jwt_payload.id);
       // console.log(user);
@@ -171,7 +169,6 @@ passport.use(
 // this creates session variable req.user on being called from callbacks
 passport.serializeUser(function (user, cb) {
   process.nextTick(function () {
-    console.log("serializer called --> ", user);
     return cb(null, { id: user.id, role: user.role });
   });
 });
@@ -179,7 +176,6 @@ passport.serializeUser(function (user, cb) {
 // this changes session variable req.user when called from authorized request
 passport.deserializeUser(function (user, cb) {
   process.nextTick(function () {
-    console.log("de-serializer called -->", user);
     return cb(null, user);
   });
 });
@@ -188,7 +184,6 @@ passport.deserializeUser(function (user, cb) {
 const stripe = require("stripe")(process.env.STRIPE_SERVER_KEY);
 server.post("/create-payment-intent", async (req, res) => {
   const { totalAmount, orderId } = req.body;
-  // console.log(totalAmount);
 
   // create a PaymentIntent with the order amount and currency
   const paymentIntent = await stripe.paymentIntents.create({
