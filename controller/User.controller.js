@@ -3,7 +3,6 @@ const { User } = require("../model/User.model");
 exports.fetchUserById = async (req, res) => {
   try {
     const { id } = req.user;     // req.user se deserialize ke through id extract ho ri hai...
-
     const user = await User.findById(id);
     // console.log(user);
 

@@ -37,7 +37,7 @@ exports.sanitizeUser = (user) => {
 };
 
 exports.cookieExtractor = function (req) {
-  console.log("cookie extracting -- ");
+  // console.log("cookie extracting -- ");
   let token = null;
   if (req && req.cookies) {
     token = req.cookies["jwt"];

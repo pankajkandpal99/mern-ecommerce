@@ -2,7 +2,6 @@ const { User } = require("../model/User.model");
 const crypto = require("crypto");
 const { sanitizeUser, sendMail } = require("../services/common");
 const jwt = require("jsonwebtoken");
-const { use } = require("passport");
 
 // signup
 exports.createUser = async (req, res) => {
@@ -53,7 +52,7 @@ exports.createUser = async (req, res) => {
 // login
 exports.loginUser = async (req, res) => {
   const user = req.user;
-  console.log("login successfull");
+  // console.log("login successfull");
   res
     .cookie("jwt", user.token, {
       // passport se authentication successfully complete ho jane ke baad client se header me cookie set kar di gayi hai jiske andar jwt jayega, aur har request per server use cookieExtractor se extract bhi kar lega...
@@ -63,17 +62,17 @@ exports.loginUser = async (req, res) => {
     .status(200)
     .json({ id: user.id, role: user.role });
 
-  console.log("cookie sent to client.");
+  // console.log("cookie sent to client.");
 };
 
 exports.checkAuth = async (req, res) => {
-  console.log("checking user..");
+  // console.log("checking user..");
 
   if (req.user) {
-    console.log("req.user -> ", req.user);
+    // console.log("req.user -> ", req.user);
     res.json(req.user);
   } else {
-    console.log("req.user is not available..");
+    // console.log("req.user is not available..");
     res.sendStatus(401);
   }
 };
@@ -94,7 +93,7 @@ exports.resetPasswordRequest = async (req, res) => {
     // send mail and a token in the mail body so we can verify thet user has clicked right link
 
     if (email) {
-      console.log(email);
+      // console.log(email);
       const response = await sendMail({ to: email, subject, html });
 
       res.json(response);
@@ -151,5 +150,5 @@ exports.logoutUser = async (req, res) => {
     })
     .sendStatus(200);
 
-  console.log("logout successfull");
+  // console.log("logout successfull");
 };
