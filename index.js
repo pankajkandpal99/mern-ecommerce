@@ -25,7 +25,6 @@ const cartRouter = require("./routes/Cart.route");
 const ordersRouter = require("./routes/Order.route");
 const { Order } = require("./model/Order.model");
 
-
 // webhook --> stripe server talk to my Node.js express server
 const endpointSecret = process.env.ENDPOINT_SECRET;
 server.post(
